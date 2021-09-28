@@ -21,6 +21,7 @@ type NzbInfo struct {
 	Id     string    `json:"id"`
 	URL    string    `json:"url"`
 	Status NzbStatus `json:"status"`
+	Size   int64     `json:"size"`
 }
 
 type Movie struct {

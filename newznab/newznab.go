@@ -3,6 +3,7 @@ package newznab
 import (
 	"fmt"
 	"github.com/mmcdole/gofeed"
+	"strconv"
 	"strings"
 )
 
@@ -15,6 +16,42 @@ type SearchResponseItem struct {
 	GUID  string `json:"guid"`
 	Title string `json:"title"`
 	URL   string `json:"url"`
+	Size  int64  `json:"size"`
+}
+
+func parseAttrs(item *gofeed.Item) (map[string]string, error) {
+	if item == nil {
+		return nil, fmt.Errorf("cannot parse nil item")
+	}
+
+	items := make(map[string]string)
+
+	newznabExt := item.Extensions["newznab"]
+	if newznabExt != nil {
+		attrs := newznabExt["attr"]
+		if attrs != nil {
+			for _, extension := range attrs {
+				innerAttrs := extension.Attrs
+
+				var name, value string
+
+				for attrName, attrValue := range innerAttrs {
+					if attrName == "name" {
+						name = attrValue
+					}
+					if attrName == "value" {
+						value = attrValue
+					}
+				}
+
+				if name != "" {
+					items[name] = value
+				}
+			}
+		}
+	}
+
+	return items, nil
 }
 
 func (n Newznab) SearchImdb(imdbId string) ([]SearchResponseItem, error) {
@@ -30,7 +67,19 @@ func (n Newznab) SearchImdb(imdbId string) ([]SearchResponseItem, error) {
 	var itemList []SearchResponseItem
 
 	for _, item := range feed.Items {
+		attrs, err := parseAttrs(item)
+		if err != nil {
+			return nil, fmt.Errorf("parseAttrs: %w", err)
+		}
 		searchItem := SearchResponseItem{Title: item.Title, GUID: item.GUID}
+		if attrs["size"] != "" {
+			size, err := strconv.Atoi(attrs["size"])
+			if err != nil {
+				fmt.Printf("invalid size format. cannot convert '%s' to integer", attrs["size"])
+			} else {
+				searchItem.Size = int64(size)
+			}
+		}
 		if len(item.Enclosures) > 0 {
 			searchItem.URL = item.Enclosures[0].URL
 		}
