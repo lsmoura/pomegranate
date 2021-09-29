@@ -7,9 +7,10 @@ import (
 
 func TestInjectQuery(t *testing.T) {
 	type Foo struct {
-		StrParam string `query_name:"str"`
-		IntParam int32  `query_name:"test"`
-		Bar      string
+		StrParam  string `query_name:"str"`
+		IntParam  int32  `query_name:"test,omitempty"`
+		Bar       string
+		Something string `query_name:",omitempty"`
 	}
 
 	u, _ := url.Parse("http://example.com")

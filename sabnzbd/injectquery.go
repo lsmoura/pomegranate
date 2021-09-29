@@ -45,7 +45,14 @@ func InjectQuery(query url.Values, s interface{}) error {
 			}
 
 			value := valueOf.Field(i).Interface()
-			query.Set(fieldName, asString(value))
+			omitEmpty := false
+			if len(pieces) > 1 && pieces[1] == "omitempty" {
+				omitEmpty = true
+			}
+
+			if value != "" || !omitEmpty {
+				query.Set(fieldName, asString(value))
+			}
 		}
 	}
 
