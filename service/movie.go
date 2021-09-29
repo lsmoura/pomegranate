@@ -62,29 +62,26 @@ func (c Config) movieAddHandler(w http.ResponseWriter, r *http.Request) {
 	identifier := r.URL.Query().Get("identifier")
 
 	// TODO: Validate that the identifier is in the format tt0000000...
-	// TODO: Check if the movie already exists and update
-
 	movie, err := c.Tmdb.ReadSingleMovie(identifier)
 	if err != nil {
 		internalError(w, "tmdb.ReadSingleMovie (%s): %w", movie.Id, err)
 		return
 	}
 
-	dbMovie := database.Movie{
-		ImdbId:      movie.ImdbId,
-		Title:       movie.Title,
-		ReleaseDate: movie.ReleaseDate,
-		Overview:    movie.Overview,
-	}
-
-	if err := dbMovie.Store(c.DB); err != nil {
-		internalError(w, "database.Movie.Store: %w", err)
+	dbMovie, err := c.DB.Movie(identifier)
+	if err != nil {
+		internalError(w, "DB.Movie (%s): %w", identifier, err)
 		return
 	}
 
-	parsedIdentifier := identifier[2:]
+	dbMovie.ImdbId = movie.ImdbId
+	dbMovie.Title = movie.Title
+	dbMovie.ReleaseDate = movie.ReleaseDate
+	dbMovie.Overview = movie.Overview
 
 	for _, n := range c.Newz {
+		parsedIdentifier := identifier[2:]
+
 		items, err := n.SearchImdb(parsedIdentifier)
 		if err != nil {
 			internalError(w, "newznab.SearchImdb: %w", err)
@@ -93,7 +90,28 @@ func (c Config) movieAddHandler(w http.ResponseWriter, r *http.Request) {
 
 		fmt.Println(items)
 
-		// TODO: Update database
+		for _, item := range items {
+			found := false
+			for _, nzb := range dbMovie.NzbInfo {
+				if nzb.Id == item.GUID {
+					found = true
+				}
+			}
+			if !found {
+				dbMovie.NzbInfo = append(dbMovie.NzbInfo, database.NzbInfo{
+					Title:  item.Title,
+					Id:     item.GUID,
+					URL:    item.URL,
+					Status: database.StatusUnknown,
+					Size:   item.Size,
+				})
+			}
+		}
+	}
+
+	if err := dbMovie.Store(c.DB); err != nil {
+		internalError(w, "database.Movie.Store: %w", err)
+		return
 	}
 
 	response := MovieAddResponse{

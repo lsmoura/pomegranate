@@ -1,6 +1,7 @@
 package database
 
 import (
+	"encoding/json"
 	"fmt"
 	bolt "go.etcd.io/bbolt"
 )
@@ -53,6 +54,10 @@ func (db DB) Store(bucket string, key []byte, data []byte) error {
 }
 
 func (db DB) BucketKeys(bucketName string) ([][]byte, error) {
+	if db.Database == nil {
+		return nil, fmt.Errorf("database was not initialized")
+	}
+
 	var resp [][]byte
 
 	err := db.Database.View(func(tx *bolt.Tx) error {
@@ -72,4 +77,28 @@ func (db DB) BucketKeys(bucketName string) ([][]byte, error) {
 	}
 
 	return resp, nil
+}
+
+func (db DB) Movie(key string) (Movie, error) {
+	if db.Database == nil {
+		return Movie{}, fmt.Errorf("database was not initialized")
+	}
+
+	var movie Movie
+
+	err := db.Database.View(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte(MovieBucketName))
+		v := b.Get([]byte(key))
+		if v != nil {
+			if err := json.Unmarshal(v, &movie); err != nil {
+				return fmt.Errorf("json.Unmarshal: %w", err)
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return Movie{}, fmt.Errorf("Database.View: %w", err)
+	}
+
+	return movie, nil
 }
