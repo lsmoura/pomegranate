@@ -102,3 +102,34 @@ func (db DB) Movie(key string) (Movie, error) {
 
 	return movie, nil
 }
+
+func (db DB) AllMovies() ([]Movie, error) {
+	if db.Database == nil {
+		return nil, fmt.Errorf("database was not initialized")
+	}
+
+	var resp []Movie
+
+	err := db.Database.View(func(tx *bolt.Tx) error {
+		// Assume bucket exists and has keys
+		b := tx.Bucket([]byte(MovieBucketName))
+
+		c := b.Cursor()
+
+		for k, bytes := c.First(); k != nil; k, _ = c.Next() {
+			var m Movie
+			err := json.Unmarshal(bytes, &m)
+			if err != nil {
+				return fmt.Errorf("json.Unmarshal: %w", err)
+			}
+			resp = append(resp, m)
+		}
+
+		return nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("Database.View: %w", err)
+	}
+
+	return resp, nil
+}

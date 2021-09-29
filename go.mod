@@ -4,6 +4,7 @@ go 1.17
 
 require (
 	github.com/go-chi/chi/v5 v5.0.4
+	github.com/lsmoura/humantoken v1.0.1
 	github.com/mmcdole/gofeed v1.1.3
 	go.etcd.io/bbolt v1.3.6
 )

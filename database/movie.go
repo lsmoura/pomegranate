@@ -17,11 +17,12 @@ const (
 )
 
 type NzbInfo struct {
-	Title  string    `json:"title"`
-	Id     string    `json:"id"`
-	URL    string    `json:"url"`
-	Status NzbStatus `json:"status"`
+	GUID   string    `json:"guid"`
+	ID     string    `json:"id"`
 	Size   int64     `json:"size"`
+	Status NzbStatus `json:"status"`
+	Title  string    `json:"title"`
+	URL    string    `json:"url"`
 }
 
 type Movie struct {
