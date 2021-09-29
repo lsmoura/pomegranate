@@ -119,11 +119,7 @@ func (s Sabnzbd) log(format string, a ...interface{}) {
 	s.Logger.Log("sabnzbd", format, a...)
 }
 
-func (s Sabnzbd) Queue(params QueueRequestParams) (Queue, error) {
-	if s.Host == "" {
-		return Queue{}, fmt.Errorf("sabnzbd structure has no host")
-	}
-
+func (s Sabnzbd) url() url.URL {
 	// TODO: detect if scheme is present on Host
 	u := url.URL{
 		Scheme: "http",
@@ -135,6 +131,19 @@ func (s Sabnzbd) Queue(params QueueRequestParams) (Queue, error) {
 		query.Add("apikey", s.Apikey)
 	}
 	query.Add("output", "json")
+	u.RawQuery = query.Encode()
+
+	return u
+}
+
+func (s Sabnzbd) Queue(params QueueRequestParams) (Queue, error) {
+	if s.Host == "" {
+		return Queue{}, fmt.Errorf("sabnzbd structure has no host")
+	}
+
+	// TODO: detect if scheme is present on Host
+	u := s.url()
+	query := u.Query()
 	query.Add("mode", "queue")
 	if params.Limit != 0 {
 		query.Add("limit", strconv.Itoa(int(params.Limit)))
@@ -181,17 +190,9 @@ func (s Sabnzbd) Queue(params QueueRequestParams) (Queue, error) {
 }
 
 func (s Sabnzbd) PauseQueue() error {
-	u := url.URL{
-		Scheme: "http",
-		Host:   s.Host,
-		Path:   "api",
-	}
+	u := s.url()
 
 	query := u.Query()
-	if s.Apikey != "" {
-		query.Add("apikey", s.Apikey)
-	}
-	query.Add("output", "json")
 	query.Add("mode", "pause")
 	u.RawQuery = query.Encode()
 
@@ -226,17 +227,9 @@ func (s Sabnzbd) PauseQueue() error {
 }
 
 func (s Sabnzbd) ResumeQueue() error {
-	u := url.URL{
-		Scheme: "http",
-		Host:   s.Host,
-		Path:   "api",
-	}
+	u := s.url()
 
 	query := u.Query()
-	if s.Apikey != "" {
-		query.Add("apikey", s.Apikey)
-	}
-	query.Add("output", "json")
 	query.Add("mode", "resume")
 	u.RawQuery = query.Encode()
 
