@@ -94,14 +94,15 @@ func (c Config) movieAddHandler(w http.ResponseWriter, r *http.Request) {
 		for _, item := range items {
 			found := false
 			for _, nzb := range dbMovie.NzbInfo {
-				if nzb.Id == item.GUID {
+				if nzb.URL == item.URL {
 					found = true
 				}
 			}
 			if !found {
 				dbMovie.NzbInfo = append(dbMovie.NzbInfo, database.NzbInfo{
+					ID:     humantoken.Generate(8, nil),
 					Title:  item.Title,
-					Id:     item.GUID,
+					GUID:   item.GUID,
 					URL:    item.URL,
 					Status: database.StatusUnknown,
 					Size:   item.Size,
@@ -127,6 +128,24 @@ func (c Config) movieAddHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Add("Content-Type", "application/json")
 	if _, err := w.Write([]byte(responseBytes)); err != nil {
+		log.Println(fmt.Errorf("http.ResponseWriter.Write: %w", err))
+	}
+}
+
+func (c Config) movieListHandler(w http.ResponseWriter, r *http.Request) {
+	movies, err := c.DB.AllMovies()
+	if err != nil {
+		internalError(w, "DB.AllMovies: %w", err)
+		return
+	}
+
+	moviesBytes, err := json.Marshal(movies)
+	if err != nil {
+		internalError(w, "json.Marshal: %w", err)
+		return
+	}
+	w.Header().Add("Content-Type", "application/json")
+	if _, err := w.Write([]byte(moviesBytes)); err != nil {
 		log.Println(fmt.Errorf("http.ResponseWriter.Write: %w", err))
 	}
 }

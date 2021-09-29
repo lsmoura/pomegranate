@@ -87,6 +87,13 @@ func main() {
 		fmt.Printf(" %s", string(k))
 	}
 	fmt.Printf("\n")
+	for _, k := range dbKeys {
+		movie, err := config.DB.Movie(string(k))
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println(movie)
+	}
 
 	if config.Sabnzbd.Host != "" {
 		fmt.Println("Checking sabnzbd config...")

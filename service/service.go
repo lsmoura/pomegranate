@@ -59,5 +59,7 @@ func Service(config Config) http.Handler {
 	r.Get("/movie/add", config.movieAddHandler)
 	r.Get("/movie/list", config.movieListHandler)
 
+	r.Get("/nzb/download", config.nzbDownload)
+
 	return r
 }
