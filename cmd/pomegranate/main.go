@@ -9,6 +9,7 @@ import (
 	"os/signal"
 	"pomegranate/database"
 	"pomegranate/newznab"
+	"pomegranate/sabnzbd"
 	"pomegranate/service"
 	"pomegranate/themoviedb"
 	"syscall"
@@ -18,6 +19,14 @@ import (
 const defaultPort = 3000
 const themoviedbApiKeyEnvironmentKey = "THEMOVIEDB_API_KEY"
 const newznabEnvironmentPrefix = "NEWZNAB"
+const sabnzbdHostEnvironmentKey = "SABNZBD_HOST"
+const sabnzbdApiKeyEnvironmentKey = "SABNZBD_API_KEY"
+
+type Logger struct{}
+
+func (l Logger) Log(service string, format string, a ...interface{}) {
+	fmt.Printf("[%s] %s", service, fmt.Sprintf(format, a...))
+}
 
 func loadSettings() (config service.Config, err error) {
 	themoviedbApiKey := os.Getenv(themoviedbApiKeyEnvironmentKey)
@@ -50,6 +59,13 @@ func loadSettings() (config service.Config, err error) {
 	}
 	config.DB = db
 
+	sabnzbdHost := os.Getenv(sabnzbdHostEnvironmentKey)
+	if sabnzbdHost != "" {
+		sabnzbdKey := os.Getenv(sabnzbdApiKeyEnvironmentKey)
+		config.Sabnzbd = sabnzbd.New(sabnzbdHost, sabnzbdKey)
+		config.Sabnzbd.Logger = &Logger{}
+	}
+
 	return
 }
 
@@ -71,6 +87,16 @@ func main() {
 		fmt.Printf(" %s", string(k))
 	}
 	fmt.Printf("\n")
+
+	if config.Sabnzbd.Host != "" {
+		fmt.Println("Checking sabnzbd config...")
+		queue, err := config.Sabnzbd.Queue(sabnzbd.QueueRequestParams{})
+		if err != nil {
+			fmt.Printf("Sabnzbd not configured properly: %s\n", err)
+		} else {
+			fmt.Println(queue)
+		}
+	}
 
 	addr := fmt.Sprintf(":%d", defaultPort)
 	server := &http.Server{Addr: addr, Handler: service.Service(config)}

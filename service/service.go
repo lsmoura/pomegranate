@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"pomegranate/database"
 	"pomegranate/newznab"
+	"pomegranate/sabnzbd"
 	"pomegranate/themoviedb"
 
 	"github.com/go-chi/chi/v5"
@@ -13,9 +14,10 @@ import (
 )
 
 type Config struct {
-	Tmdb themoviedb.Themoviedb
-	Newz []newznab.Newznab
-	DB   database.DB
+	DB      database.DB
+	Newz    []newznab.Newznab
+	Sabnzbd sabnzbd.Sabnzbd
+	Tmdb    themoviedb.Themoviedb
 }
 
 type MovieEntry struct {
