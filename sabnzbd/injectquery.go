@@ -9,14 +9,26 @@ import (
 )
 
 func asString(i interface{}) string {
-	switch reflect.TypeOf(i) {
-	case reflect.TypeOf(string("")):
+	typeOf := reflect.TypeOf(i)
+	valueOf := reflect.ValueOf(i)
+
+	if typeOf.Kind() == reflect.Slice {
+		var pieces []string
+		for i := 0; i < valueOf.Len(); i++ {
+			pieces = append(pieces, asString(valueOf.Index(i).Interface()))
+		}
+
+		return strings.Join(pieces, ",")
+	}
+
+	switch typeOf.Kind() {
+	case reflect.String:
 		return i.(string)
-	case reflect.TypeOf(int(0)):
+	case reflect.Int:
 		return strconv.Itoa(i.(int))
-	case reflect.TypeOf(int32(0)):
+	case reflect.Int32:
 		return strconv.Itoa(int(i.(int32)))
-	case reflect.TypeOf(int64(0)):
+	case reflect.Int64:
 		return strconv.Itoa(int(i.(int64)))
 	}
 

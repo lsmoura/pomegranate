@@ -60,3 +60,27 @@ func TestInjectInUrl(t *testing.T) {
 		t.Fatalf("Generated url (%s) is not the expected url (%s)", generatedUrl, expectedUrl)
 	}
 }
+
+func TestInjectInUrlWithArray(t *testing.T) {
+	type Foo struct {
+		StrArray []string `query_name:"str"`
+		IntArray []int32  `query_name:"test"`
+	}
+
+	u, _ := url.Parse("http://example.com")
+	params := Foo{
+		StrArray: []string{"luke", "leia"},
+		IntArray: []int32{42, 88},
+	}
+
+	if err := InjectInUrl(u, params); err != nil {
+		t.Fatalf("Unexpected error in InjectInUrl: %s", err)
+	}
+
+	generatedUrl := u.String()
+	const expectedUrl = "http://example.com?str=luke%2Cleia&test=42%2C88"
+
+	if generatedUrl != expectedUrl {
+		t.Fatalf("Generated url (%s) is not the expected url (%s)", generatedUrl, expectedUrl)
+	}
+}
