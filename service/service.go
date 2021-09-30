@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"pomegranate/database"
+	"pomegranate/manager"
 	"pomegranate/newznab"
 	"pomegranate/sabnzbd"
 	"pomegranate/themoviedb"
@@ -20,21 +21,8 @@ type Config struct {
 	Tmdb    themoviedb.Themoviedb
 }
 
-type MovieEntry struct {
-	Runtime  int32
-	Released string
-	ImdbId   string
-	TmdbId   int32
-	Year     int32
-	Genres   []string
-	Titles   []string
-	Images   struct {
-		Posters []string
-	}
-}
-
 type MovieSearchResponse struct {
-	Movies []MovieEntry `json:"movies"`
+	Movies []manager.MovieEntry `json:"movies"`
 }
 
 func internalError(w http.ResponseWriter, format string, a ...interface{}) {

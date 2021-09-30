@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"pomegranate/database"
+	"pomegranate/manager"
 )
 
 type MovieAddResponse struct {
@@ -18,33 +19,14 @@ type MovieAddResponse struct {
 func (c Config) movieSearchHandler(w http.ResponseWriter, r *http.Request) {
 	searchQuery := r.URL.Query().Get("q")
 
-	// TODO: Error if query is empty
-
-	res, err := c.Tmdb.ReadMovies(searchQuery, 0)
+	movies, err := manager.MovieSearch(c.Tmdb, searchQuery)
 	if err != nil {
-		internalError(w, "tmdb.ReadMovies: %w", err)
+		internalError(w, "manager.MovieSearch: %w", err)
 		return
 	}
 
-	payload := MovieSearchResponse{}
-
-	for _, movie := range res.Results {
-		m := MovieEntry{
-			Titles:   []string{movie.Title},
-			Released: movie.ReleaseDate,
-			TmdbId:   movie.Id,
-		}
-
-		extraInfo, err := c.Tmdb.ReadSingleMovie(fmt.Sprintf("%d", movie.Id))
-		if err != nil {
-			internalError(w, "tmdb.ReadSingleMovie (%d): %w", movie.Id, err)
-			return
-		}
-
-		m.ImdbId = extraInfo.ImdbId
-		m.Runtime = extraInfo.Runtime
-
-		payload.Movies = append(payload.Movies, m)
+	payload := MovieSearchResponse{
+		Movies: movies,
 	}
 
 	w.Header().Add("Content-Type", "application/json")
