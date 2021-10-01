@@ -7,20 +7,25 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path"
+	"syscall"
+	"time"
+
 	"pomegranate/database"
 	"pomegranate/newznab"
 	"pomegranate/sabnzbd"
 	"pomegranate/service"
 	"pomegranate/themoviedb"
-	"syscall"
-	"time"
 )
 
-const defaultPort = 3000
-const themoviedbApiKeyEnvironmentKey = "THEMOVIEDB_API_KEY"
-const newznabEnvironmentPrefix = "NEWZNAB"
-const sabnzbdHostEnvironmentKey = "SABNZBD_HOST"
-const sabnzbdApiKeyEnvironmentKey = "SABNZBD_API_KEY"
+const (
+	defaultPort                    = 3000
+	themoviedbApiKeyEnvironmentKey = "THEMOVIEDB_API_KEY"
+	sabnzbdHostEnvironmentKey      = "SABNZBD_HOST"
+	newznabEnvironmentPrefix       = "NEWZNAB"
+	sabnzbdApiKeyEnvironmentKey    = "SABNZBD_API_KEY"
+	databaseDirKey                 = "DATA_DIR"
+)
 
 type Logger struct{}
 
@@ -52,8 +57,8 @@ func loadSettings() (config service.Config, err error) {
 		return config, fmt.Errorf("invalid or missing newznab environemnt keys. Use keys %s_HOST_1 and %s_KEY_1 for setting the sources of nzb files. Numbers should be sequential and start at 1. Key is optional if the server does not require one", newznabEnvironmentPrefix, newznabEnvironmentPrefix)
 	}
 
-	// TODO: Make the database path a setting
-	db, err := database.Open("pomegranate.db")
+	dbPath := os.Getenv(databaseDirKey)
+	db, err := database.Open(path.Join(dbPath, "pomegranate.db"))
 	if err != nil {
 		log.Fatal(fmt.Errorf("database.Open: %w", err))
 	}
