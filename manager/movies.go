@@ -18,7 +18,7 @@ type MovieEntry struct {
 	}
 }
 
-func MovieSearch(tmdb themoviedb.Themoviedb, query string) ([]MovieEntry, error) {
+func (m *Manager) MovieSearch(tmdb themoviedb.Themoviedb, query string) ([]MovieEntry, error) {
 	if query == "" {
 		return nil, fmt.Errorf("empty query")
 	}

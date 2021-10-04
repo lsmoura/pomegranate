@@ -16,6 +16,8 @@ const (
 	StatusError               = "error"
 )
 
+const MovieKind = "movie"
+
 type NzbInfo struct {
 	GUID   string    `json:"guid"`
 	ID     string    `json:"id"`
@@ -33,6 +35,18 @@ type Movie struct {
 	Overview    string    `json:"overview"`
 	ReleaseDate string    `json:"release_date"`
 	NzbInfo     []NzbInfo `json:"nzb_info"`
+}
+
+func (m *Movie) Kind() string {
+	return MovieKind
+}
+
+func (m *Movie) SetKey(key Key) {
+	m.ImdbId = string(key)
+}
+
+func (m *Movie) GetKey() Key {
+	return []byte(m.ImdbId)
 }
 
 func (m Movie) Store(db DB) error {

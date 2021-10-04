@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/signal"
 	"pomegranate/database"
+	"pomegranate/manager"
 	"pomegranate/newznab"
 	"pomegranate/sabnzbd"
 	"pomegranate/service"
@@ -64,6 +65,11 @@ func loadSettings() (config service.Config, err error) {
 		sabnzbdKey := os.Getenv(sabnzbdApiKeyEnvironmentKey)
 		config.Sabnzbd = sabnzbd.New(sabnzbdHost, sabnzbdKey)
 		config.Sabnzbd.Logger = &Logger{}
+	}
+
+	config.Manager, err = manager.NewManager(db)
+	if err != nil {
+		return config, fmt.Errorf("cannot create manager object: %w", err)
 	}
 
 	return

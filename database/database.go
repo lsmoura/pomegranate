@@ -1,6 +1,7 @@
 package database
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	bolt "go.etcd.io/bbolt"
@@ -10,6 +11,11 @@ const MovieBucketName = "movies"
 
 type DB struct {
 	Database *bolt.DB
+}
+
+type Store interface {
+	FindAll(ctx context.Context, dst interface{}) error
+	FindOne(ctx context.Context, dst interface{}) error
 }
 
 func Open(path string) (DB, error) {

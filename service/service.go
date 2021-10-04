@@ -19,6 +19,8 @@ type Config struct {
 	Newz    []newznab.Newznab
 	Sabnzbd sabnzbd.Sabnzbd
 	Tmdb    themoviedb.Themoviedb
+
+	Manager *manager.Manager
 }
 
 type MovieSearchResponse struct {

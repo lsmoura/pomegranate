@@ -7,7 +7,6 @@ import (
 	"log"
 	"net/http"
 	"pomegranate/database"
-	"pomegranate/manager"
 )
 
 type MovieAddResponse struct {
@@ -19,7 +18,7 @@ type MovieAddResponse struct {
 func (c Config) movieSearchHandler(w http.ResponseWriter, r *http.Request) {
 	searchQuery := r.URL.Query().Get("q")
 
-	movies, err := manager.MovieSearch(c.Tmdb, searchQuery)
+	movies, err := c.Manager.MovieSearch(c.Tmdb, searchQuery)
 	if err != nil {
 		internalError(w, "manager.MovieSearch: %w", err)
 		return
