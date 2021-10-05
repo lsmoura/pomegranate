@@ -1,6 +1,9 @@
 package manager
 
-import "pomegranate/database"
+import (
+	"pomegranate/database"
+	"pomegranate/models"
+)
 
 type Manager struct {
 	database.DB
@@ -11,7 +14,7 @@ type Manager struct {
 func NewManager(db database.DB) (*Manager, error) {
 	m := &Manager{
 		DB:     db,
-		Movies: database.NewStore(&db, &database.Movie{}),
+		Movies: database.NewStore(&db, &models.Movie{}),
 	}
 
 	return m, nil

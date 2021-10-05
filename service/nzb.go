@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"pomegranate/database"
+	"pomegranate/models"
 	"pomegranate/sabnzbd"
 )
 
@@ -14,7 +14,7 @@ func (c Config) nzbDownload(w http.ResponseWriter, r *http.Request) {
 
 	// TODO: Error if id is empty
 
-	movie, err := c.DB.MovieWithNzbID(nzbID)
+	movie, err := c.Manager.MovieWithNzbID(nzbID)
 	if err != nil {
 		internalError(w, "database.MovieWithNzbID: %w", err)
 		return
@@ -28,7 +28,7 @@ func (c Config) nzbDownload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var nzb *database.NzbInfo
+	var nzb *models.NzbInfo
 	for _, info := range movie.NzbInfo {
 		if info.ID == nzbID {
 			nzb = &info
@@ -57,10 +57,10 @@ func (c Config) nzbDownload(w http.ResponseWriter, r *http.Request) {
 	}
 
 	nzb.DownloaderId = ids[0]
-	nzb.Status = database.StatusSnatched
+	nzb.Status = models.StatusSnatched
 
 	// update Movie nzbs
-	var nzbList []database.NzbInfo
+	var nzbList []models.NzbInfo
 	for _, info := range movie.NzbInfo {
 		if info.ID != nzb.ID {
 			nzbList = append(nzbList, info)

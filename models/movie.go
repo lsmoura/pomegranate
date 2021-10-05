@@ -1,11 +1,12 @@
-package database
+package models
 
 import (
 	"encoding/json"
 	"fmt"
+	"pomegranate/database"
 )
 
-// TODO: move model specific files to its own package
+const MovieBucketName = "movies"
 
 type NzbStatus string
 
@@ -43,21 +44,22 @@ func (m *Movie) Kind() string {
 	return MovieKind
 }
 
-func (m *Movie) SetKey(key Key) {
+func (m *Movie) SetKey(key database.Key) {
 	m.ImdbId = string(key)
 }
 
-func (m *Movie) GetKey() Key {
+func (m *Movie) GetKey() database.Key {
 	return []byte(m.ImdbId)
 }
 
-func (m Movie) Store(db DB) error {
+// Store saves the current movie data to the database
+func (m Movie) Store(db database.DB) error {
 	dbBytes, err := json.Marshal(m)
 	if err != nil {
 		return fmt.Errorf("json.Marshal: %w", err)
 	}
 
-	if err := db.Store(MovieBucketName, []byte(m.ImdbId), dbBytes); err != nil {
+	if err := db.Store(MovieBucketName, m.GetKey(), dbBytes); err != nil {
 		return fmt.Errorf("DB.Store: %w", err)
 	}
 

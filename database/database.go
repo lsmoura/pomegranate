@@ -2,7 +2,6 @@ package database
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	bolt "go.etcd.io/bbolt"
 )
@@ -120,91 +119,6 @@ func (db *DB) BucketKeys(bucketName string) ([][]byte, error) {
 	})
 	if err != nil {
 		return nil, err
-	}
-
-	return resp, nil
-}
-
-func (db *DB) Movie(key string) (Movie, error) {
-	if db.Database == nil {
-		return Movie{}, fmt.Errorf("database was not initialized")
-	}
-
-	v, err := db.Read([]byte(MovieBucketName), []byte(key))
-	if err != nil {
-		return Movie{}, fmt.Errorf("db.Read: %w", err)
-	}
-
-	var movie Movie
-
-	if err := json.Unmarshal(v, &movie); err != nil {
-		return Movie{}, fmt.Errorf("json.Unmarshal: %w", err)
-	}
-
-	return movie, nil
-}
-
-func (db *DB) AllMovies() ([]Movie, error) {
-	if db.Database == nil {
-		return nil, fmt.Errorf("database was not initialized")
-	}
-
-	var resp []Movie
-
-	err := db.Database.View(func(tx *bolt.Tx) error {
-		// Assume bucket exists and has keys
-		b := tx.Bucket([]byte(MovieBucketName))
-
-		c := b.Cursor()
-
-		for k, bytes := c.First(); k != nil; k, bytes = c.Next() {
-			var m Movie
-			err := json.Unmarshal(bytes, &m)
-			if err != nil {
-				return fmt.Errorf("json.Unmarshal: %w", err)
-			}
-			resp = append(resp, m)
-		}
-
-		return nil
-	})
-	if err != nil {
-		return nil, fmt.Errorf("Database.View: %w", err)
-	}
-
-	return resp, nil
-}
-
-func (db *DB) MovieWithNzbID(id string) (Movie, error) {
-	if db.Database == nil {
-		return Movie{}, fmt.Errorf("database was not initialized")
-	}
-
-	var resp Movie
-	err := db.Database.View(func(tx *bolt.Tx) error {
-		// Assume bucket exists and has keys
-		b := tx.Bucket([]byte(MovieBucketName))
-
-		c := b.Cursor()
-
-		for k, bytes := c.First(); k != nil; k, bytes = c.Next() {
-			var m Movie
-			if err := json.Unmarshal(bytes, &m); err != nil {
-				return fmt.Errorf("json.Unmarshal: %w", err)
-			}
-
-			for _, info := range m.NzbInfo {
-				if info.ID == id {
-					resp = m
-					return nil
-				}
-			}
-		}
-
-		return nil
-	})
-	if err != nil {
-		return Movie{}, err
 	}
 
 	return resp, nil
