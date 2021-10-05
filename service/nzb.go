@@ -1,13 +1,14 @@
 package service
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"pomegranate/models"
 	"pomegranate/sabnzbd"
 )
+
+// TODO: move nzbDownload function to manager and break it down into chewable pieces
 
 func (c Config) nzbDownload(w http.ResponseWriter, r *http.Request) {
 	nzbID := r.URL.Query().Get("id")
@@ -75,14 +76,7 @@ func (c Config) nzbDownload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Add("Content-Type", "application/json")
-	payloadBytes, err := json.Marshal(movie)
-	if err != nil {
-		internalError(w, "json.Marshal: %w", err)
-		return
-	}
-
-	if _, err := w.Write(payloadBytes); err != nil {
-		log.Println(fmt.Errorf("http.ResponseWriter.Write: %w", err))
+	if err := writeJson(w, movie); err != nil {
+		internalError(w, "writeJson: %w", err)
 	}
 }
