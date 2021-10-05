@@ -5,6 +5,8 @@ import (
 	"fmt"
 )
 
+// TODO: move model specific files to its own package
+
 type NzbStatus string
 
 const (

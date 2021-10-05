@@ -14,14 +14,15 @@ type DB struct {
 }
 
 type Store interface {
-	FindAll(ctx context.Context, dst interface{}) error
-	FindOne(ctx context.Context, dst interface{}) error
+	FindByID(ctx context.Context, dst interface{}, id string) error
+	FindAll(ctx context.Context, dst interface{}, filters ...Filter) error
+	//FindOne(ctx context.Context, dst interface{}, filters ...Filter) error
 }
 
-func Open(path string) (DB, error) {
+func Open(path string) (*DB, error) {
 	db, err := bolt.Open(path, 0660, nil)
 	if err != nil {
-		return DB{}, fmt.Errorf("bolt.Open: %w", err)
+		return nil, fmt.Errorf("bolt.Open: %w", err)
 	}
 
 	err = db.Update(func(tx *bolt.Tx) error {
@@ -32,13 +33,33 @@ func Open(path string) (DB, error) {
 		return nil
 	})
 	if err != nil {
-		return DB{}, fmt.Errorf("db.Update: %w", err)
+		return nil, fmt.Errorf("db.Update: %w", err)
 	}
 
-	return DB{db}, nil
+	return &DB{db}, nil
 }
 
-func (db DB) Store(bucket string, key []byte, data []byte) error {
+func (db *DB) Close() error {
+	return db.Database.Close()
+}
+
+func (db *DB) CreateBucket(bucketName string) error {
+	err := db.Database.Update(func(tx *bolt.Tx) error {
+		_, err := tx.CreateBucketIfNotExists([]byte(bucketName))
+		if err != nil {
+			return fmt.Errorf("tx.CreateBucketIfNotExists: %w", err)
+		}
+		return nil
+	})
+
+	if err != nil {
+		return fmt.Errorf("db.Database.Update: %w", err)
+	}
+
+	return nil
+}
+
+func (db *DB) Store(bucket string, key []byte, data []byte) error {
 	if db.Database == nil {
 		return fmt.Errorf("database was not initialized")
 	}
@@ -59,7 +80,26 @@ func (db DB) Store(bucket string, key []byte, data []byte) error {
 	return nil
 }
 
-func (db DB) BucketKeys(bucketName string) ([][]byte, error) {
+func (db *DB) Read(bucket []byte, key []byte) ([]byte, error) {
+	if db.Database == nil {
+		return nil, fmt.Errorf("database was not initialized")
+	}
+
+	var retVal []byte
+
+	err := db.Database.View(func(tx *bolt.Tx) error {
+		b := tx.Bucket(bucket)
+		retVal = b.Get(key)
+		return nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("Database.View: %w", err)
+	}
+
+	return retVal, nil
+}
+
+func (db *DB) BucketKeys(bucketName string) ([][]byte, error) {
 	if db.Database == nil {
 		return nil, fmt.Errorf("database was not initialized")
 	}
@@ -85,31 +125,26 @@ func (db DB) BucketKeys(bucketName string) ([][]byte, error) {
 	return resp, nil
 }
 
-func (db DB) Movie(key string) (Movie, error) {
+func (db *DB) Movie(key string) (Movie, error) {
 	if db.Database == nil {
 		return Movie{}, fmt.Errorf("database was not initialized")
 	}
 
+	v, err := db.Read([]byte(MovieBucketName), []byte(key))
+	if err != nil {
+		return Movie{}, fmt.Errorf("db.Read: %w", err)
+	}
+
 	var movie Movie
 
-	err := db.Database.View(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte(MovieBucketName))
-		v := b.Get([]byte(key))
-		if v != nil {
-			if err := json.Unmarshal(v, &movie); err != nil {
-				return fmt.Errorf("json.Unmarshal: %w", err)
-			}
-		}
-		return nil
-	})
-	if err != nil {
-		return Movie{}, fmt.Errorf("Database.View: %w", err)
+	if err := json.Unmarshal(v, &movie); err != nil {
+		return Movie{}, fmt.Errorf("json.Unmarshal: %w", err)
 	}
 
 	return movie, nil
 }
 
-func (db DB) AllMovies() ([]Movie, error) {
+func (db *DB) AllMovies() ([]Movie, error) {
 	if db.Database == nil {
 		return nil, fmt.Errorf("database was not initialized")
 	}
@@ -140,7 +175,7 @@ func (db DB) AllMovies() ([]Movie, error) {
 	return resp, nil
 }
 
-func (db DB) MovieWithNzbID(id string) (Movie, error) {
+func (db *DB) MovieWithNzbID(id string) (Movie, error) {
 	if db.Database == nil {
 		return Movie{}, fmt.Errorf("database was not initialized")
 	}
