@@ -58,12 +58,18 @@ func (s *store) FindAll(ctx context.Context, dst interface{}, filters ...Filter)
 		return fmt.Errorf("database was not initialized")
 	}
 
-	// TODO: Check if dst is actually a slice
-	// TODO: Check if dst elements are of the same type of s.model
-
-	bucketName := s.model.Kind()
+	if dst == nil {
+		return fmt.Errorf("dst cannot be nil")
+	}
+	if kind := reflect.TypeOf(dst).Kind(); kind != reflect.Ptr {
+		return fmt.Errorf("dst is not a pointer: %s", kind)
+	}
+	if ptrKind := reflect.TypeOf(dst).Elem().Kind(); ptrKind != reflect.Slice {
+		return fmt.Errorf("dst does not point to a slice: %s", ptrKind)
+	}
 	myType := reflect.TypeOf(s.model)
 
+	bucketName := s.model.Kind()
 	slice := reflect.ValueOf(dst).Elem()
 
 	err := s.db().View(func(tx *bolt.Tx) error {
