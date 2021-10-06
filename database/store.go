@@ -46,6 +46,10 @@ func (s *store) FindByID(ctx context.Context, dst interface{}, id string) error 
 		return fmt.Errorf("db.Read: %w", err)
 	}
 
+	if v == nil {
+		return fmt.Errorf("not found")
+	}
+
 	if err := json.Unmarshal(v, &dst); err != nil {
 		return fmt.Errorf("json.Unmarshal: %w", err)
 	}

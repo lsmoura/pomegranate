@@ -28,7 +28,7 @@ func (t TestStruct) SetKey(key Key) {
 	t.ID = string(key)
 }
 
-func TestInit(t *testing.T) {
+func TestDatabase(t *testing.T) {
 	tmp, err := ioutil.TempDir("", "dbtest")
 	if err != nil {
 		t.Fatalf("error creating temp dir: %v", err)
@@ -52,10 +52,26 @@ func TestInit(t *testing.T) {
 	}()
 
 	bucketName := (TestStruct{}).Kind()
-
 	if err := db.CreateBucket(bucketName); err != nil {
 		t.Fatalf("db.CreateBucket: %s", err)
 	}
+
+	t.Run("Basic", func(t *testing.T) {
+		testBasic(t, db)
+	})
+	t.Run("StoreParameters", func(t *testing.T) {
+		testStoreParameters(t, db, TestStruct{})
+	})
+	t.Run("Store_FindByID", func(t *testing.T) {
+		testStore_FindByID(t, db)
+	})
+	t.Run("Store_FindAll", func(t *testing.T) {
+		testStore_FindAll(t, db)
+	})
+}
+
+func testBasic(t *testing.T, db *DB) {
+	bucketName := (TestStruct{}).Kind()
 
 	k := humantoken.Generate(8, nil)
 
@@ -114,8 +130,40 @@ func TestInit(t *testing.T) {
 			}
 		}
 	}
+}
 
+func testStoreParameters(t *testing.T, db *DB, model Model) {
+	store := NewStore(db, model)
+
+	if err := store.FindAll(context.TODO(), nil); err == nil {
+		t.Fatalf("store.FindAll should return an error if destination is nil")
+	}
+
+	intValue := int(33)
+	if err := store.FindAll(context.TODO(), &intValue); err == nil {
+		t.Fatalf("store.FindAll should return an error if destination does not point to a slice")
+	}
+}
+
+func testStore_FindByID(t *testing.T, db *DB) {
 	store := NewStore(db, TestStruct{})
+	k := humantoken.Generate(8, nil)
+
+	{
+		v := TestStruct{
+			ID:     k,
+			Name:   "John Doe",
+			Number: 42,
+		}
+		vBytes, err := json.Marshal(v)
+		if err != nil {
+			t.Fatalf("json.Marshal: %s", err)
+		}
+
+		if err := db.Store(v.Kind(), []byte(k), vBytes); err != nil {
+			t.Fatalf("db.Store: %s", err)
+		}
+	}
 	{
 		var v TestStruct
 		if err := store.FindByID(context.Background(), &v, k); err != nil {
@@ -125,13 +173,21 @@ func TestInit(t *testing.T) {
 			t.Fatalf("Received data differs from written data")
 		}
 	}
+
 	{
-		var v []TestStruct
-		if err := store.FindAll(context.Background(), &v); err != nil {
-			t.Fatalf("store.FindAll: %s", err)
+		k := humantoken.Generate(8, nil)
+		var v TestStruct
+		if err := store.FindByID(context.Background(), &v, k); err == nil {
+			t.Fatalf("store.FindByID should return error for non existent key")
 		}
-		if len(v) != 3 {
-			t.Fatalf("received a different number of elements than expected: %d", len(v))
-		}
+	}
+}
+
+func testStore_FindAll(t *testing.T, db *DB) {
+	store := NewStore(db, TestStruct{})
+
+	var v []TestStruct
+	if err := store.FindAll(context.Background(), &v); err != nil {
+		t.Fatalf("store.FindAll: %s", err)
 	}
 }
