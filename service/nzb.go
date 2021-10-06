@@ -1,20 +1,21 @@
 package service
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
-	"pomegranate/database"
+	"pomegranate/models"
 	"pomegranate/sabnzbd"
 )
+
+// TODO: move nzbDownload function to manager and break it down into chewable pieces
 
 func (c Config) nzbDownload(w http.ResponseWriter, r *http.Request) {
 	nzbID := r.URL.Query().Get("id")
 
 	// TODO: Error if id is empty
 
-	movie, err := c.DB.MovieWithNzbID(nzbID)
+	movie, err := c.Manager.MovieWithNzbID(nzbID)
 	if err != nil {
 		internalError(w, "database.MovieWithNzbID: %w", err)
 		return
@@ -28,7 +29,7 @@ func (c Config) nzbDownload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var nzb *database.NzbInfo
+	var nzb *models.NzbInfo
 	for _, info := range movie.NzbInfo {
 		if info.ID == nzbID {
 			nzb = &info
@@ -57,10 +58,10 @@ func (c Config) nzbDownload(w http.ResponseWriter, r *http.Request) {
 	}
 
 	nzb.DownloaderId = ids[0]
-	nzb.Status = database.StatusSnatched
+	nzb.Status = models.StatusSnatched
 
 	// update Movie nzbs
-	var nzbList []database.NzbInfo
+	var nzbList []models.NzbInfo
 	for _, info := range movie.NzbInfo {
 		if info.ID != nzb.ID {
 			nzbList = append(nzbList, info)
@@ -75,14 +76,7 @@ func (c Config) nzbDownload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Add("Content-Type", "application/json")
-	payloadBytes, err := json.Marshal(movie)
-	if err != nil {
-		internalError(w, "json.Marshal: %w", err)
-		return
-	}
-
-	if _, err := w.Write(payloadBytes); err != nil {
-		log.Println(fmt.Errorf("http.ResponseWriter.Write: %w", err))
+	if err := writeJson(w, movie); err != nil {
+		internalError(w, "writeJson: %w", err)
 	}
 }

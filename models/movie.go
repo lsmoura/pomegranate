@@ -1,9 +1,12 @@
-package database
+package models
 
 import (
 	"encoding/json"
 	"fmt"
+	"pomegranate/database"
 )
+
+const MovieBucketName = "movies"
 
 type NzbStatus string
 
@@ -15,6 +18,8 @@ const (
 	StatusUnknown             = "unknown"
 	StatusError               = "error"
 )
+
+const MovieKind = "movie"
 
 type NzbInfo struct {
 	GUID   string    `json:"guid"`
@@ -35,13 +40,26 @@ type Movie struct {
 	NzbInfo     []NzbInfo `json:"nzb_info"`
 }
 
-func (m Movie) Store(db DB) error {
+func (m *Movie) Kind() string {
+	return MovieKind
+}
+
+func (m *Movie) SetKey(key database.Key) {
+	m.ImdbId = string(key)
+}
+
+func (m *Movie) GetKey() database.Key {
+	return []byte(m.ImdbId)
+}
+
+// Store saves the current movie data to the database
+func (m Movie) Store(db database.DB) error {
 	dbBytes, err := json.Marshal(m)
 	if err != nil {
 		return fmt.Errorf("json.Marshal: %w", err)
 	}
 
-	if err := db.Store(MovieBucketName, []byte(m.ImdbId), dbBytes); err != nil {
+	if err := db.Store(MovieBucketName, m.GetKey(), dbBytes); err != nil {
 		return fmt.Errorf("DB.Store: %w", err)
 	}
 

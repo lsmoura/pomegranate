@@ -1,6 +1,7 @@
 package service
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -19,6 +20,8 @@ type Config struct {
 	Newz    []newznab.Newznab
 	Sabnzbd sabnzbd.Sabnzbd
 	Tmdb    themoviedb.Themoviedb
+
+	Manager *manager.Manager
 }
 
 type MovieSearchResponse struct {
@@ -32,6 +35,20 @@ func internalError(w http.ResponseWriter, format string, a ...interface{}) {
 		log.Println(fmt.Errorf("http.ResponseWriter.Write: %w", err))
 	}
 	log.Println(fmt.Errorf(format, a...))
+}
+
+func writeJson(w http.ResponseWriter, data interface{}) error {
+	w.Header().Add("Content-Type", "application/json")
+	payloadBytes, err := json.Marshal(data)
+	if err != nil {
+		return fmt.Errorf("json.Marshal: %w", err)
+	}
+
+	if _, err := w.Write(payloadBytes); err != nil {
+		return fmt.Errorf("w.Write: %w", err)
+	}
+
+	return nil
 }
 
 func Service(config Config) http.Handler {
