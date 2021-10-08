@@ -16,7 +16,7 @@ import (
 )
 
 type Config struct {
-	DB      database.DB
+	DB      *database.DB
 	Newz    []newznab.Newznab
 	Sabnzbd sabnzbd.Sabnzbd
 	Tmdb    themoviedb.Themoviedb

@@ -6,7 +6,7 @@ import (
 	"github.com/lsmoura/humantoken"
 	"log"
 	"net/http"
-	"pomegranate/database"
+	"pomegranate/models"
 )
 
 type MovieAddResponse struct {
@@ -46,11 +46,11 @@ func (c Config) movieAddHandler(w http.ResponseWriter, r *http.Request) {
 	// TODO: Validate that the identifier is in the format tt0000000...
 	movie, err := c.Tmdb.ReadSingleMovie(identifier)
 	if err != nil {
-		internalError(w, "tmdb.ReadSingleMovie (%s): %w", movie.Id, err)
+		internalError(w, "tmdb.ReadSingleMovie (%s): %w", identifier, err)
 		return
 	}
 
-	dbMovie, err := c.DB.Movie(identifier)
+	dbMovie, err := c.Manager.Movie(identifier)
 	if err != nil {
 		internalError(w, "DB.Movie (%s): %w", identifier, err)
 		return
@@ -80,12 +80,12 @@ func (c Config) movieAddHandler(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 			if !found {
-				dbMovie.NzbInfo = append(dbMovie.NzbInfo, database.NzbInfo{
+				dbMovie.NzbInfo = append(dbMovie.NzbInfo, models.NzbInfo{
 					ID:     humantoken.Generate(8, nil),
 					Title:  item.Title,
 					GUID:   item.GUID,
 					URL:    item.URL,
-					Status: database.StatusUnknown,
+					Status: models.StatusUnknown,
 					Size:   item.Size,
 				})
 			}
@@ -114,7 +114,7 @@ func (c Config) movieAddHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c Config) movieListHandler(w http.ResponseWriter, r *http.Request) {
-	movies, err := c.DB.AllMovies()
+	movies, err := c.Manager.AllMovies()
 	if err != nil {
 		internalError(w, "DB.AllMovies: %w", err)
 		return

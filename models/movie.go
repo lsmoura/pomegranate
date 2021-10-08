@@ -53,7 +53,7 @@ func (m *Movie) GetKey() database.Key {
 }
 
 // Store saves the current movie data to the database
-func (m Movie) Store(db database.DB) error {
+func (m Movie) Store(db *database.DB) error {
 	dbBytes, err := json.Marshal(m)
 	if err != nil {
 		return fmt.Errorf("json.Marshal: %w", err)

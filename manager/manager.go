@@ -6,15 +6,15 @@ import (
 )
 
 type Manager struct {
-	database.DB
+	*database.DB
 
 	Movies database.Store
 }
 
-func NewManager(db database.DB) (*Manager, error) {
+func NewManager(db *database.DB) (*Manager, error) {
 	m := &Manager{
 		DB:     db,
-		Movies: database.NewStore(&db, &models.Movie{}),
+		Movies: database.NewStore(db, &models.Movie{}),
 	}
 
 	return m, nil

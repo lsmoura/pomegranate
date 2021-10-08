@@ -99,7 +99,7 @@ func main() {
 	}
 	fmt.Printf("\n")
 	for _, k := range dbKeys {
-		movie, err := config.DB.Movie(string(k))
+		movie, err := config.Manager.Movie(string(k))
 		if err != nil {
 			log.Fatal(err)
 		}
