@@ -10,6 +10,7 @@ import (
 	"pomegranate/newznab"
 	"pomegranate/sabnzbd"
 	"pomegranate/themoviedb"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -51,20 +52,42 @@ func writeJson(w http.ResponseWriter, data interface{}) error {
 	return nil
 }
 
+// FileSystem custom file system handler
+type FileSystem struct {
+	fs http.FileSystem
+}
+
+// Open opens file
+func (fs FileSystem) Open(path string) (http.File, error) {
+	fmt.Printf("filesystem %s\n", path)
+	f, err := fs.fs.Open(path)
+	if err != nil {
+		return nil, err
+	}
+
+	s, err := f.Stat()
+	if s.IsDir() {
+		index := strings.TrimSuffix(path, "/") + "/index.html"
+		if _, err := fs.fs.Open(index); err != nil {
+			return nil, err
+		}
+	}
+
+	return f, nil
+}
+
 func Service(config Config) http.Handler {
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
-	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		_, err := w.Write([]byte("pomegranate"))
-		if err != nil {
-			log.Println(fmt.Errorf("http.ResponseWriter.Write: %w", err))
-		}
-	})
 	r.Get("/movie/search", config.movieSearchHandler)
 	r.Get("/movie/add", config.movieAddHandler)
 	r.Get("/movie/list", config.movieListHandler)
 
 	r.Get("/nzb/download", config.nzbDownload)
+
+	// TODO: read the filesystem root dir from config
+	fileServer := http.FileServer(FileSystem{http.Dir("./static")})
+	r.Handle("/*", fileServer)
 
 	return r
 }

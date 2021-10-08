@@ -12,16 +12,16 @@ import (
 )
 
 type MovieEntry struct {
-	Runtime  int32
-	Released string
-	ImdbId   string
-	TmdbId   int32
-	Year     int32
-	Genres   []string
-	Titles   []string
+	Runtime  int32    `json:"runtime"`
+	Released string   `json:"released"`
+	ImdbId   string   `json:"imdb_id"`
+	TmdbId   int32    `json:"tmdb_id"`
+	Year     int32    `json:"year"`
+	Genres   []string `json:"genres"`
+	Titles   []string `json:"titles"`
 	Images   struct {
-		Posters []string
-	}
+		Posters []string `json:"posters"`
+	} `json:"images"`
 }
 
 func (m *Manager) MovieSearch(tmdb themoviedb.Themoviedb, query string) ([]MovieEntry, error) {

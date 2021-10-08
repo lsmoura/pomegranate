@@ -6,7 +6,8 @@ import (
 	bolt "go.etcd.io/bbolt"
 )
 
-const MovieBucketName = "movies"
+// TODO: remove this from here and use what the model says
+const MovieBucketName = "movie"
 
 type DB struct {
 	Database *bolt.DB
@@ -25,6 +26,7 @@ func Open(path string) (*DB, error) {
 	}
 
 	err = db.Update(func(tx *bolt.Tx) error {
+		// TODO: the database package should not be creating stuff on its own
 		_, err := tx.CreateBucketIfNotExists([]byte(MovieBucketName))
 		if err != nil {
 			return errors.Wrap(err, "create bucket")
@@ -88,6 +90,9 @@ func (db *DB) Read(bucket []byte, key []byte) ([]byte, error) {
 
 	err := db.Database.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket(bucket)
+		if b == nil {
+			return fmt.Errorf("cannot find bucket: %s", bucket)
+		}
 		retVal = b.Get(key)
 		return nil
 	})
