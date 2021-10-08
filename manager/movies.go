@@ -7,6 +7,7 @@ import (
 	"pomegranate/models"
 	"pomegranate/themoviedb"
 
+	"github.com/pkg/errors"
 	bolt "go.etcd.io/bbolt"
 )
 
@@ -25,12 +26,12 @@ type MovieEntry struct {
 
 func (m *Manager) MovieSearch(tmdb themoviedb.Themoviedb, query string) ([]MovieEntry, error) {
 	if query == "" {
-		return nil, fmt.Errorf("empty query")
+		return nil, errors.New("empty query")
 	}
 
 	res, err := tmdb.ReadMovies(query, 0)
 	if err != nil {
-		return nil, fmt.Errorf("tmdb.ReadMovies: %w", err)
+		return nil, errors.Wrap(err, "tmdb.ReadMovies")
 	}
 
 	var payload []MovieEntry
@@ -44,7 +45,7 @@ func (m *Manager) MovieSearch(tmdb themoviedb.Themoviedb, query string) ([]Movie
 
 		extraInfo, err := tmdb.ReadSingleMovie(fmt.Sprintf("%d", movie.Id))
 		if err != nil {
-			return nil, fmt.Errorf("tmdb.ReadSingleMovie (%d): %w", movie.Id, err)
+			return nil, errors.Wrapf(err, "tmdb.ReadSingleMovie (%d)", movie.Id)
 		}
 
 		m.ImdbId = extraInfo.ImdbId
@@ -58,7 +59,7 @@ func (m *Manager) MovieSearch(tmdb themoviedb.Themoviedb, query string) ([]Movie
 
 func (m *Manager) MovieWithNzbID(id string) (models.Movie, error) {
 	if m.DB.Database == nil {
-		return models.Movie{}, fmt.Errorf("database was not initialized")
+		return models.Movie{}, errors.New("database was not initialized")
 	}
 
 	var resp models.Movie
@@ -71,7 +72,7 @@ func (m *Manager) MovieWithNzbID(id string) (models.Movie, error) {
 		for k, bytes := c.First(); k != nil; k, bytes = c.Next() {
 			var m models.Movie
 			if err := json.Unmarshal(bytes, &m); err != nil {
-				return fmt.Errorf("json.Unmarshal: %w", err)
+				return errors.Wrap(err, "json.Unmarshal")
 			}
 
 			for _, info := range m.NzbInfo {
@@ -85,7 +86,7 @@ func (m *Manager) MovieWithNzbID(id string) (models.Movie, error) {
 		return nil
 	})
 	if err != nil {
-		return models.Movie{}, err
+		return models.Movie{}, errors.Wrap(err, "m.DB.Database.View")
 	}
 
 	return resp, nil
@@ -93,13 +94,13 @@ func (m *Manager) MovieWithNzbID(id string) (models.Movie, error) {
 
 func (m *Manager) AllMovies() ([]models.Movie, error) {
 	if m.DB.Database == nil {
-		return nil, fmt.Errorf("database was not initialized")
+		return nil, errors.New("database was not initialized")
 	}
 
 	var resp []models.Movie
 
 	if err := m.Movies.FindAll(context.Background(), &resp); err != nil {
-		return nil, fmt.Errorf("m.Movies.FindAll: %w", err)
+		return nil, errors.Wrap(err, "m.Movies.FindAll")
 	}
 
 	return resp, nil
@@ -107,12 +108,12 @@ func (m *Manager) AllMovies() ([]models.Movie, error) {
 
 func (m *Manager) Movie(key string) (models.Movie, error) {
 	if m.DB.Database == nil {
-		return models.Movie{}, fmt.Errorf("database was not initialized")
+		return models.Movie{}, errors.New("database was not initialized")
 	}
 
 	var movie models.Movie
 	if err := m.Movies.FindByID(context.Background(), &movie, key); err != nil {
-		return models.Movie{}, fmt.Errorf("m.Movies.FindByID: %w", err)
+		return models.Movie{}, errors.Wrap(err, "m.Movies.FindByID")
 	}
 
 	return movie, nil
