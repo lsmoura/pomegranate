@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/pkg/errors"
 	bolt "go.etcd.io/bbolt"
 )
 
@@ -36,61 +37,30 @@ func (s *store) db() *bolt.DB {
 
 func (s *store) FindByID(ctx context.Context, dst interface{}, id string) error {
 	if s.db() == nil {
-		return fmt.Errorf("database was not initialized")
+		return errors.New("database was not initialized")
 	}
 
 	bucketName := s.model.Kind()
 
 	v, err := s.session.Read([]byte(bucketName), []byte(id))
 	if err != nil {
-		return fmt.Errorf("db.Read: %w", err)
+		return errors.Wrap(err, "db.Read")
 	}
 
 	if v == nil {
-		return fmt.Errorf("not found")
+		return errors.New("not found")
 	}
 
 	if err := json.Unmarshal(v, &dst); err != nil {
-		return fmt.Errorf("json.Unmarshal: %w", err)
+		return errors.Wrap(err, "json.Unmarshal")
 	}
 
 	return nil
 }
 
-func compare(value interface{}, c Comparison) (bool, error) {
-	typeOfValue := reflect.TypeOf(value)
-	if typeOfValue.Kind() != reflect.TypeOf(c.Value).Kind() {
-		return false, fmt.Errorf("cannot compare different types: %s, %s", typeOfValue.Kind(), reflect.TypeOf(c.Value).Kind())
-	}
-
-	switch typeOfValue.Kind() {
-	case reflect.String:
-		if c.Operator == Equal {
-			return value.(string) == c.Value.(string), nil
-		}
-		return false, fmt.Errorf("comparison not implemented: %s, %d", typeOfValue.Kind(), c.Operator)
-	case reflect.Int32:
-		switch c.Operator {
-		case Equal:
-			return c.Value.(int32) == value.(int32), nil
-		case LessThan:
-			return c.Value.(int32) < value.(int32), nil
-		case LessThanEq:
-			return c.Value.(int32) <= value.(int32), nil
-		case GreaterThan:
-			return c.Value.(int32) > value.(int32), nil
-		case GreaterThanEq:
-			return c.Value.(int32) >= value.(int32), nil
-		}
-		return false, fmt.Errorf("comparison not implemented: %s, %d", typeOfValue.Kind(), c.Operator)
-	}
-
-	return false, fmt.Errorf("comparison not implemented: %s, %d", typeOfValue.Kind(), c.Operator)
-}
-
 func checkFilters(dst interface{}, filters []Filter) (bool, error) {
 	if dst == nil {
-		return false, fmt.Errorf("cannot compare without an object")
+		return false, errors.New("cannot compare without an object")
 	}
 	if filters == nil {
 		return true, nil
@@ -100,9 +70,9 @@ func checkFilters(dst interface{}, filters []Filter) (bool, error) {
 	for _, filterMap := range filters {
 		for key, comparison := range filterMap {
 			value := valueOf.FieldByName(key)
-			result, err := compare(value.Interface(), comparison)
+			result, err := comparison.compare(value.Interface())
 			if err != nil {
-				return false, fmt.Errorf("compare: %w", err)
+				return false, errors.Wrap(err, "compare")
 			}
 			if !result {
 				return false, nil
@@ -115,17 +85,17 @@ func checkFilters(dst interface{}, filters []Filter) (bool, error) {
 
 func (s *store) FindAll(ctx context.Context, dst interface{}, filters ...Filter) error {
 	if s.db() == nil {
-		return fmt.Errorf("database was not initialized")
+		return errors.New("database was not initialized")
 	}
 
 	if dst == nil {
-		return fmt.Errorf("dst cannot be nil")
+		return errors.New("dst cannot be nil")
 	}
 	if kind := reflect.TypeOf(dst).Kind(); kind != reflect.Ptr {
-		return fmt.Errorf("dst is not a pointer: %s", kind)
+		return errors.New(fmt.Sprintf("dst is not a pointer: %s", kind))
 	}
 	if ptrKind := reflect.TypeOf(dst).Elem().Kind(); ptrKind != reflect.Slice {
-		return fmt.Errorf("dst does not point to a slice: %s", ptrKind)
+		return errors.New(fmt.Sprintf("dst does not point to a slice: %s", ptrKind))
 	}
 	myType := reflect.TypeOf(s.model)
 
@@ -142,12 +112,12 @@ func (s *store) FindAll(ctx context.Context, dst interface{}, filters ...Filter)
 			m := reflect.New(myType)
 			err := json.Unmarshal(bytes, m.Interface())
 			if err != nil {
-				return fmt.Errorf("json.Unmarshal: %w", err)
+				return errors.Wrap(err, "json.Unmarshal")
 			}
 
 			shouldInclude, err := checkFilters(m.Elem().Interface(), filters)
 			if err != nil {
-				return fmt.Errorf("checkFilters: %w", err)
+				return errors.Wrap(err, "checkFilters")
 			}
 
 			if shouldInclude {
@@ -158,7 +128,7 @@ func (s *store) FindAll(ctx context.Context, dst interface{}, filters ...Filter)
 		return nil
 	})
 	if err != nil {
-		return fmt.Errorf("Database.View: %w", err)
+		return errors.Wrap(err, "Database.View")
 	}
 
 	reflect.ValueOf(dst).Elem().Set(slice)
