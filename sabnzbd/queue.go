@@ -3,6 +3,7 @@ package sabnzbd
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/pkg/errors"
 	"io"
 	"io/ioutil"
 	"log"
@@ -95,7 +96,7 @@ type PauseQueueResponse struct {
 
 func (s Sabnzbd) Queue(params QueueRequestParams) (Queue, error) {
 	if s.Host == "" {
-		return Queue{}, fmt.Errorf("sabnzbd structure has no host")
+		return Queue{}, errors.New("sabnzbd structure has no host")
 	}
 
 	// TODO: detect if scheme is present on Host
@@ -123,7 +124,7 @@ func (s Sabnzbd) Queue(params QueueRequestParams) (Queue, error) {
 	s.log("HTTP get: %s\n", strings.ReplaceAll(u.String(), s.Apikey, "xxx"))
 	resp, err := http.Get(u.String())
 	if err != nil {
-		return Queue{}, fmt.Errorf("http.Get: %w", err)
+		return Queue{}, errors.Wrap(err, "http.Get")
 	}
 
 	defer func(Body io.ReadCloser) {
@@ -135,12 +136,12 @@ func (s Sabnzbd) Queue(params QueueRequestParams) (Queue, error) {
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return Queue{}, fmt.Errorf("ioutil.ReadAll: %w", err)
+		return Queue{}, errors.Wrap(err, "ioutil.ReadAll")
 	}
 
 	var queue QueueResponse
 	if err := json.Unmarshal(body, &queue); err != nil {
-		return Queue{}, fmt.Errorf("json.Unmarshal: %w", err)
+		return Queue{}, errors.Wrap(err, "json.Unmarshal")
 	}
 
 	return queue.Queue, nil
@@ -156,7 +157,7 @@ func (s Sabnzbd) PauseQueue() error {
 	s.log("HTTP get: %s\n", strings.ReplaceAll(u.String(), s.Apikey, "xxx"))
 	resp, err := http.Get(u.String())
 	if err != nil {
-		return fmt.Errorf("http.Get: %w", err)
+		return errors.Wrap(err, "http.Get")
 	}
 
 	defer func(Body io.ReadCloser) {
@@ -168,16 +169,16 @@ func (s Sabnzbd) PauseQueue() error {
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return fmt.Errorf("ioutil.ReadAll: %w", err)
+		return errors.Wrap(err, "ioutil.ReadAll")
 	}
 
 	var apiResponse PauseQueueResponse
 	if err := json.Unmarshal(body, &apiResponse); err != nil {
-		return fmt.Errorf("json.Unmarshal: %w", err)
+		return errors.Wrap(err, "json.Unmarshal")
 	}
 
 	if !apiResponse.Status {
-		return fmt.Errorf("response status is false")
+		return errors.New("response status is false")
 	}
 
 	return nil
@@ -193,7 +194,7 @@ func (s Sabnzbd) ResumeQueue() error {
 	fmt.Printf("HTTP get (sabnzbd): %s\n", strings.ReplaceAll(u.String(), s.Apikey, "xxx"))
 	resp, err := http.Get(u.String())
 	if err != nil {
-		return fmt.Errorf("http.Get: %w", err)
+		return errors.Wrap(err, "http.Get")
 	}
 
 	defer func(Body io.ReadCloser) {
@@ -205,16 +206,16 @@ func (s Sabnzbd) ResumeQueue() error {
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return fmt.Errorf("ioutil.ReadAll: %w", err)
+		return errors.Wrap(err, "ioutil.ReadAll")
 	}
 
 	var apiResponse PauseQueueResponse
 	if err := json.Unmarshal(body, &apiResponse); err != nil {
-		return fmt.Errorf("json.Unmarshal: %w", err)
+		return errors.Wrap(err, "json.Unmarshal")
 	}
 
 	if !apiResponse.Status {
-		return fmt.Errorf("response status is false")
+		return errors.New("response status is false")
 	}
 
 	return nil

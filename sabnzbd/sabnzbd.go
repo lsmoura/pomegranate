@@ -3,6 +3,7 @@ package sabnzbd
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/pkg/errors"
 	"io"
 	"io/ioutil"
 	"log"
@@ -96,7 +97,7 @@ func (s Sabnzbd) AddUrl(params AddUrlParams) ([]string, error) {
 	fmt.Printf("HTTP get (sabnzbd): %s\n", strings.ReplaceAll(u.String(), s.Apikey, "xxx"))
 	resp, err := http.Get(u.String())
 	if err != nil {
-		return nil, fmt.Errorf("http.Get: %w", err)
+		return nil, errors.Wrap(err, "http.Get")
 	}
 
 	defer func(Body io.ReadCloser) {
@@ -108,17 +109,17 @@ func (s Sabnzbd) AddUrl(params AddUrlParams) ([]string, error) {
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("ioutil.ReadAll: %w", err)
+		return nil, errors.Wrap(err, "ioutil.ReadAll")
 	}
 
 	var apiResponse AddUrlResponse
 	if err := json.Unmarshal(body, &apiResponse); err != nil {
-		return nil, fmt.Errorf("json.Unmarshal: %w", err)
+		return nil, errors.Wrap(err, "json.Unmarshal")
 	}
 
 	if !apiResponse.Status {
 		fmt.Println(string(body))
-		return nil, fmt.Errorf("response status is false")
+		return nil, errors.New("response status is false")
 	}
 
 	return apiResponse.NzoIds, nil
