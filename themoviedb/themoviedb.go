@@ -18,13 +18,13 @@ func ReadSingleMovie(apiKey string, key string, logger func(string, ...interface
 	logger(fmt.Sprintf("HTTP request: %s\n", strings.ReplaceAll(url, apiKey, "xxx")))
 	resp, err := http.Get(url)
 	if err != nil {
-		return movieInfo, fmt.Errorf("http.Get: %s", err)
+		return movieInfo, fmt.Errorf("http.Get: %w", err)
 	}
 
 	defer func(Body io.ReadCloser) {
 		err := Body.Close()
 		if err != nil {
-			logger(fmt.Sprintf("Body.Close: %w", err))
+			logger(fmt.Sprintf("Body.Close: %s", err))
 		}
 	}(resp.Body)
 
@@ -51,13 +51,13 @@ func ReadMovies(apiKey string, search string, page int, logger func(string, ...i
 	logger(fmt.Sprintf("HTTP request: %s\n", strings.ReplaceAll(url, apiKey, "xxx")))
 	resp, err := http.Get(url)
 	if err != nil {
-		return ThemoviedbResponse, fmt.Errorf("http.Get: %s", err)
+		return ThemoviedbResponse, fmt.Errorf("http.Get: %w", err)
 	}
 
 	defer func(Body io.ReadCloser) {
 		err := Body.Close()
 		if err != nil {
-			logger(fmt.Sprintf("Body.Close: %w", err))
+			logger(fmt.Sprintf("Body.Close: %s", err))
 		}
 	}(resp.Body)
 
