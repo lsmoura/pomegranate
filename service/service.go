@@ -3,6 +3,8 @@ package service
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 	"log"
 	"net/http"
 	"pomegranate/database"
@@ -10,9 +12,6 @@ import (
 	"pomegranate/newznab"
 	"pomegranate/sabnzbd"
 	"pomegranate/themoviedb"
-
-	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
 )
 
 type Config struct {
@@ -54,17 +53,15 @@ func writeJson(w http.ResponseWriter, data interface{}) error {
 func Service(config Config) http.Handler {
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
-	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		_, err := w.Write([]byte("pomegranate"))
-		if err != nil {
-			log.Println(fmt.Errorf("http.ResponseWriter.Write: %w", err))
-		}
-	})
 	r.Get("/movie/search", config.movieSearchHandler)
 	r.Get("/movie/add", config.movieAddHandler)
 	r.Get("/movie/list", config.movieListHandler)
 
 	r.Get("/nzb/download", config.nzbDownload)
+
+	// TODO: read the filesystem root dir from config
+	fileServer := http.FileServer(FileSystem{http.Dir("./static")})
+	r.Handle("/*", fileServer)
 
 	return r
 }

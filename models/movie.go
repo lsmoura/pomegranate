@@ -6,8 +6,6 @@ import (
 	"pomegranate/database"
 )
 
-const MovieBucketName = "movies"
-
 type NzbStatus string
 
 const (
@@ -59,7 +57,7 @@ func (m Movie) Store(db *database.DB) error {
 		return fmt.Errorf("json.Marshal: %w", err)
 	}
 
-	if err := db.Store(MovieBucketName, m.GetKey(), dbBytes); err != nil {
+	if err := db.Store(m.Kind(), m.GetKey(), dbBytes); err != nil {
 		return fmt.Errorf("DB.Store: %w", err)
 	}
 
