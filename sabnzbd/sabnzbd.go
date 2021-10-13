@@ -84,13 +84,13 @@ type AddUrlResponse struct {
 
 func (s Sabnzbd) AddUrl(params AddUrlParams) ([]string, error) {
 	if params.Name == "" {
-		return nil, fmt.Errorf("name is required for adding a url")
+		return nil, errors.New("name is required for adding a url")
 	}
 	u := s.url()
 	query := u.Query()
 	query.Set("mode", "addurl")
 	if err := InjectQuery(query, params); err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "InjectQuery")
 	}
 	u.RawQuery = query.Encode()
 
