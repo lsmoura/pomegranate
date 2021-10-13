@@ -75,7 +75,7 @@ func loadSettings() (config service.Config, err error) {
 
 	config.Manager, err = manager.NewManager(db)
 	if err != nil {
-		return config, errors.Errorf("cannot create manager object: %w", err)
+		return config, errors.Wrap(err, "manager.NewManager")
 	}
 
 	return
