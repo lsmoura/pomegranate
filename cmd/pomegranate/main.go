@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/pkg/errors"
 	"log"
 	"net/http"
 	"os"
@@ -37,7 +38,7 @@ func (l Logger) Log(service string, format string, a ...interface{}) {
 func loadSettings() (config service.Config, err error) {
 	themoviedbApiKey := os.Getenv(themoviedbApiKeyEnvironmentKey)
 	if themoviedbApiKey == "" {
-		return config, fmt.Errorf("invalid or missing required environment key: %s", themoviedbApiKeyEnvironmentKey)
+		return config, errors.Errorf("invalid or missing required environment key: %s", themoviedbApiKeyEnvironmentKey)
 	}
 	config.Tmdb = themoviedb.New(themoviedbApiKey)
 
@@ -55,13 +56,13 @@ func loadSettings() (config service.Config, err error) {
 		config.Newz = append(config.Newz, newznab.Newznab{Host: host, ApiKey: apiKey})
 	}
 	if len(config.Newz) <= 0 {
-		return config, fmt.Errorf("invalid or missing newznab environemnt keys. Use keys %s_HOST_1 and %s_KEY_1 for setting the sources of nzb files. Numbers should be sequential and start at 1. Key is optional if the server does not require one", newznabEnvironmentPrefix, newznabEnvironmentPrefix)
+		return config, errors.Errorf("invalid or missing newznab environment keys. Use keys %s_HOST_1 and %s_KEY_1 for setting the sources of nzb files. Numbers should be sequential and start at 1. Key is optional if the server does not require one", newznabEnvironmentPrefix, newznabEnvironmentPrefix)
 	}
 
 	dbPath := os.Getenv(databaseDirKey)
 	db, err := database.Open(path.Join(dbPath, "pomegranate.db"))
 	if err != nil {
-		log.Fatal(fmt.Errorf("database.Open: %w", err))
+		return config, errors.Wrap(err, "database.Open")
 	}
 	config.DB = db
 
@@ -74,7 +75,7 @@ func loadSettings() (config service.Config, err error) {
 
 	config.Manager, err = manager.NewManager(db)
 	if err != nil {
-		return config, fmt.Errorf("cannot create manager object: %w", err)
+		return config, errors.Errorf("cannot create manager object: %w", err)
 	}
 
 	return
