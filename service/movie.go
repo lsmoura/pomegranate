@@ -4,8 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/lsmoura/humantoken"
+	"github.com/pkg/errors"
 	"log"
 	"net/http"
+	"pomegranate/database"
 	"pomegranate/models"
 )
 
@@ -51,7 +53,7 @@ func (c Config) movieAddHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	dbMovie, err := c.Manager.Movie(identifier)
-	if err != nil {
+	if err != nil && !errors.Is(err, database.NotFoundError) {
 		internalError(w, "DB.Movie (%s): %w", identifier, err)
 		return
 	}
@@ -126,7 +128,7 @@ func (c Config) movieListHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Add("Content-Type", "application/json")
-	if _, err := w.Write([]byte(moviesBytes)); err != nil {
+	if _, err := w.Write(moviesBytes); err != nil {
 		log.Println(fmt.Errorf("http.ResponseWriter.Write: %w", err))
 	}
 }

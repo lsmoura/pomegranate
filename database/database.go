@@ -91,7 +91,7 @@ func (db *DB) Read(bucket []byte, key []byte) ([]byte, error) {
 	err := db.Database.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket(bucket)
 		if b == nil {
-			return fmt.Errorf("cannot find bucket: %s", bucket)
+			return errors.Errorf("cannot find bucket: %s", bucket)
 		}
 		retVal = b.Get(key)
 		return nil

@@ -35,6 +35,14 @@ func (s *store) db() *bolt.DB {
 	return s.session.Database
 }
 
+type Error string
+
+func (e Error) Error() string {
+	return string(e)
+}
+
+const NotFoundError = Error("not found")
+
 func (s *store) FindByID(ctx context.Context, dst interface{}, id string) error {
 	if s.db() == nil {
 		return errors.New("database was not initialized")
@@ -48,7 +56,7 @@ func (s *store) FindByID(ctx context.Context, dst interface{}, id string) error 
 	}
 
 	if v == nil {
-		return errors.New("not found")
+		return errors.Wrap(NotFoundError, "db.Read")
 	}
 
 	if err := json.Unmarshal(v, &dst); err != nil {
@@ -121,7 +129,7 @@ func (s *store) FindAll(ctx context.Context, dst interface{}, filters ...Filter)
 			}
 
 			if shouldInclude {
-				slice = reflect.Append(slice, m.Elem())
+				slice = reflect.Append(slice, reflect.Indirect(m.Elem()))
 			}
 		}
 
