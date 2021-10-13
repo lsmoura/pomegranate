@@ -2,6 +2,7 @@ package sabnzbd
 
 import (
 	"fmt"
+	"github.com/pkg/errors"
 	"net/url"
 	"reflect"
 	"strconv"
@@ -39,7 +40,7 @@ func InjectQuery(query url.Values, s interface{}) error {
 	typeOf := reflect.TypeOf(s)
 
 	if typeOf.Kind() != reflect.Struct {
-		return fmt.Errorf("invalid parameter kind: %s", typeOf.Kind())
+		return errors.New(fmt.Sprintf("invalid parameter kind: %s", typeOf.Kind()))
 	}
 
 	valueOf := reflect.ValueOf(s)
@@ -75,7 +76,7 @@ func InjectInUrl(url *url.URL, s interface{}) error {
 	query := url.Query()
 	err := InjectQuery(query, s)
 	if err != nil {
-		return fmt.Errorf("InjectQuery: %w", err)
+		return errors.Wrap(err, "InjectQuery")
 	}
 	url.RawQuery = query.Encode()
 

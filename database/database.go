@@ -2,7 +2,7 @@ package database
 
 import (
 	"context"
-	"fmt"
+	"github.com/pkg/errors"
 	bolt "go.etcd.io/bbolt"
 )
 
@@ -21,18 +21,18 @@ type Store interface {
 func Open(path string) (*DB, error) {
 	db, err := bolt.Open(path, 0660, nil)
 	if err != nil {
-		return nil, fmt.Errorf("bolt.Open: %w", err)
+		return nil, errors.Wrap(err, "bolt.Open")
 	}
 
 	err = db.Update(func(tx *bolt.Tx) error {
 		_, err := tx.CreateBucketIfNotExists([]byte(MovieBucketName))
 		if err != nil {
-			return fmt.Errorf("create bucket: %s", err)
+			return errors.Wrap(err, "create bucket")
 		}
 		return nil
 	})
 	if err != nil {
-		return nil, fmt.Errorf("db.Update: %w", err)
+		return nil, errors.Wrap(err, "db.Update")
 	}
 
 	return &DB{db}, nil
@@ -46,13 +46,13 @@ func (db *DB) CreateBucket(bucketName string) error {
 	err := db.Database.Update(func(tx *bolt.Tx) error {
 		_, err := tx.CreateBucketIfNotExists([]byte(bucketName))
 		if err != nil {
-			return fmt.Errorf("tx.CreateBucketIfNotExists: %w", err)
+			return errors.Wrap(err, "tx.CreateBucketIfNotExists")
 		}
 		return nil
 	})
 
 	if err != nil {
-		return fmt.Errorf("db.Database.Update: %w", err)
+		return errors.Wrap(err, "db.Database.Update")
 	}
 
 	return nil
@@ -60,20 +60,20 @@ func (db *DB) CreateBucket(bucketName string) error {
 
 func (db *DB) Store(bucket string, key []byte, data []byte) error {
 	if db.Database == nil {
-		return fmt.Errorf("database was not initialized")
+		return errors.New("database was not initialized")
 	}
 	err := db.Database.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(bucket))
 		err := b.Put(key, data)
 		if err != nil {
-			return fmt.Errorf("bucket.Put: %w", err)
+			return errors.Wrap(err, "bucket.Put")
 		}
 
 		return nil
 	})
 
 	if err != nil {
-		return fmt.Errorf("db.Update: %w", err)
+		return errors.Wrap(err, "db.Update")
 	}
 
 	return nil
@@ -81,7 +81,7 @@ func (db *DB) Store(bucket string, key []byte, data []byte) error {
 
 func (db *DB) Read(bucket []byte, key []byte) ([]byte, error) {
 	if db.Database == nil {
-		return nil, fmt.Errorf("database was not initialized")
+		return nil, errors.New("database was not initialized")
 	}
 
 	var retVal []byte
@@ -92,7 +92,7 @@ func (db *DB) Read(bucket []byte, key []byte) ([]byte, error) {
 		return nil
 	})
 	if err != nil {
-		return nil, fmt.Errorf("Database.View: %w", err)
+		return nil, errors.Wrap(err, "Database.View")
 	}
 
 	return retVal, nil
@@ -100,7 +100,7 @@ func (db *DB) Read(bucket []byte, key []byte) ([]byte, error) {
 
 func (db *DB) BucketKeys(bucketName string) ([][]byte, error) {
 	if db.Database == nil {
-		return nil, fmt.Errorf("database was not initialized")
+		return nil, errors.New("database was not initialized")
 	}
 
 	var resp [][]byte
